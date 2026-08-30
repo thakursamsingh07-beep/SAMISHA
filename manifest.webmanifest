@@ -1,0 +1,21 @@
+{
+  "name": "SAMISHA \u2014 Vidushi's Learning Space",
+  "short_name": "SAMISHA",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#080a12",
+  "theme_color": "#080a12",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
