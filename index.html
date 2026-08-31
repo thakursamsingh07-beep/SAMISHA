@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#080a12">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SAMISHA">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>SAMISHA — Vidushi's Learning Space</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -212,6 +217,13 @@ async function loadAssignments(){try{let snap;try{snap=await getDocs(query(colle
 function updateStreak(){ensureToday();if(lastActive&&lastActive!==key()&&lastActive!==yesterday()){streak=1;localStorage.setItem("samisha_streak",streak)}}
 function init(){ensureToday();updateStreak();setupGreeting();renderLearn();renderHome();renderProgress();renderTeacher();setupTimer();loadSettings().then(()=>{renderHome();renderTeacher()});syncProgress().then(()=>{updateStreak();renderHome();renderProgress();renderTeacher()});loadAssignments()}
 init();
+
+// Enable PWA installation without changing app functionality.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('PWA service worker unavailable:', err));
+  });
+}
 </script>
 </body>
 </html>
