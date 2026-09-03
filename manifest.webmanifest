@@ -1,9 +1,9 @@
 {
-  "name": "SAMISHA — Vidushi's Learning Space",
+  "name": "SAMISHA Study RPG",
   "short_name": "SAMISHA",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0b0e13",
-  "theme_color": "#0b0e13",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
   "icons": []
 }
