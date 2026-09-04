@@ -72,11 +72,7 @@ button,input,textarea,select{font-family:inherit}button{cursor:pointer;color:inh
  <div class="formGroup"><label>TOPIC</label><input id="topicInput" placeholder="e.g. Algebraic Identities"></div>
  <div class="formGroup"><label>MAXIMUM MARKS</label><input id="marks" type="number" placeholder="e.g. 35"></div>
  <div class="formGroup"><label>DEADLINE</label><input id="deadline" type="date"></div>
- <div class="formGroup"><label>INSTRUCTIONS</label><textarea id="description" placeholder="Write instructions for Vidushi..."></textarea></div>
- <div class="formGroup"><label>📎 ASSIGNMENT FILES FOR VIDUSHI</label>
- <input id="teacherAttachmentFiles" type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx">
- <div class="cardSub" style="margin-top:6px;line-height:1.5">Attach files that Vidushi should see with this assignment. Maximum 10 files, 50 MB each.</div>
- <div id="teacherAttachmentStatus" class="submissionStatus">No files selected.</div></div>
+ <div class="formGroup"><label>INSTRUCTIONS</label><textarea id="description" placeholder="Write instructions for Vidushi..."></textarea></div><div class="formGroup"><label>ATTACH ASSIGNMENT FILES</label><input id="assignmentAttachmentFiles" type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx"><div class="cardSub" style="margin-top:6px;line-height:1.5">Images, videos, PDF and Word files • maximum 50 MB per file.</div><div id="assignmentAttachmentStatus" class="submissionStatus">No files selected.</div></div>
  <button class="primaryBtn" id="publishButton">🚀 PUBLISH ASSIGNMENT</button><button class="secondaryBtn hidden" id="cancelEdit">CANCEL EDIT</button>
 </section>
 <section class="card"><div class="cardHeader"><div class="cardTitle">Daily Goal</div><div class="cardSub">STUDENT HOME</div></div><div class="formGroup"><label>GOAL COUNT</label><input id="goalInput" type="number" min="1" max="20" value="1"></div><div class="formGroup"><label>GOAL TEXT</label><input id="goalDescription" placeholder="Complete assignments and revise one topic"></div><button class="primaryBtn" id="saveGoal">💾 SAVE DAILY GOAL</button></section>
@@ -132,38 +128,21 @@ function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOS
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.classList.remove("show"),2300)}
 function ensureToday(){const k=key();if(todayDate!==k){todayDate=k;todayDone=0;localStorage.setItem("samisha_today_date",k);localStorage.setItem("samisha_today_done","0")}}
 function activate(view){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));$(view).classList.add("active");document.querySelectorAll(".navItem").forEach(n=>n.classList.toggle("active",n.dataset.view===view));window.scrollTo({top:0,behavior:"smooth"});if(view==="teacherView")renderTeacher();if(view==="rpgView")renderRpg()}
-document.querySelectorAll(".navItem").forEach(n=>n.onclick=()=>activate(n.dataset.view));function openTeacher(){const pin=prompt("Enter Teacher PIN");if(pin==="0410"){activate("teacherView")}else if(pin!==null){toast("Incorrect Teacher PIN.")}}
+document.querySelectorAll(".navItem").forEach(n=>{if(n.dataset.view!=="teacherView")n.onclick=()=>activate(n.dataset.view)});function openTeacher(){const pin=prompt("Enter Teacher PIN");if(pin==="0410"){activate("teacherView")}else if(pin!==null){toast("Incorrect Teacher PIN.")}}
 $("teacherHeaderButton").onclick=openTeacher;
 document.querySelector('.navItem[data-view="teacherView"]').onclick=openTeacher;
 $("backButton").onclick=()=>activate("homeView");
 const quotes=["Small progress every day becomes extraordinary progress.","Don't aim to be perfect. Aim to be better than yesterday.","Your future self will thank you for the work you do today.","Difficult questions are opportunities to become smarter.","Consistency beats motivation.","Understand it. Practice it. Master it."];
 function setupGreeting(){const h=new Date().getHours();$("greeting").textContent=(h<5||h>=21?"Good night":h<12?"Good morning":h<17?"Good afternoon":"Good evening")+", Vidushi";$("quote").textContent=quotes[new Date().getDate()%quotes.length]}
 function renderHome(){ensureToday();const done=assignments.filter(a=>completed.includes(a.id)).length;const rate=assignments.length?Math.round(done/assignments.length*100):0;$("streak").textContent=streak;$("xp").textContent=xp;$("completion").textContent=rate+"%";$("assignmentCount").textContent=assignments.length;$("goalTitle").textContent=goalDescription;$("goalDone").textContent=todayDone+" done today";$("goalTarget").textContent="Goal: "+dailyGoal;const pct=Math.min(100,Math.round(todayDone/dailyGoal*100));$("goalPercent").textContent=pct+"%";$("goalBar").style.width=pct+"%";$("teacherMessage").innerHTML=esc(teacherMessage)+"<small>— Your Teacher</small>";renderAssignments();renderPlan()}
-function renderAssignments(){const c=$("studentAssignments");let list=assignments.slice().sort((a,b)=>(b.created||0)-(a.created||0));if(filter==="pending")list=list.filter(a=>!completed.includes(a.id));if(filter==="completed")list=list.filter(a=>completed.includes(a.id));if(!list.length){c.innerHTML='<div class="empty">'+(filter==="all"?"No assignments yet.":"Nothing in this section.")+'</div>';return}c.innerHTML="";list.forEach(a=>{const done=completed.includes(a.id),d=document.createElement("div");d.className="assignment "+(done?"completed":"");d.innerHTML='<div class="assignmentTop"><div class="assignmentName">'+esc(a.title)+'</div><div class="badge '+(done?"completedBadge":"")+'">'+(done?"DONE":"NEW")+'</div></div><div class="assignmentMeta">'+esc(a.subject)+(a.topic?" • "+esc(a.topic):"")+" • "+esc(a.marks)+" marks<br>Deadline: "+esc(a.deadline)+(a.description?"<br>"+esc(a.description):"")+(Array.isArray(a.media)&&a.media.length?"<br>📎 "+a.media.length+" teacher file"+(a.media.length===1?"":"s")+" attached":"")+ '</div><div class="submissionBox"><div class="submissionTitle">📸 ATTACH COMPLETED WORK</div><div class="submissionHint">Choose up to 5 clear photos (JPG, PNG or WEBP, 10 MB each).</div><input class="inlineAssignmentFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden><button class="uploadBtn inlineChoose">📷 CHOOSE PHOTOS</button><div class="submissionStatus inlineStatus">No photos selected.</div><div class="submissionList inlineList"></div></div><button class="secondaryBtn viewAssignment">VIEW DETAILS</button><button class="completeBtn '+(done?"done":"")+'">'+(done?"✓ COMPLETED":"✓ MARK AS COMPLETED")+'</button>';const input=d.querySelector(".inlineAssignmentFiles"),choose=d.querySelector(".inlineChoose"),status=d.querySelector(".inlineStatus"),listBox=d.querySelector(".inlineList");choose.onclick=()=>input.click();input.onchange=()=>{const files=Array.from(input.files||[]);if(files.length>5||files.some(f=>f.size>10*1024*1024)){input.value="";status.textContent="Maximum 5 photos, 10 MB each.";return}status.textContent=files.length?`${files.length} photo${files.length===1?"":"s"} selected.`:"No photos selected.";listBox.innerHTML="";if(files.length){const b=document.createElement("button");b.className="uploadBtn";b.textContent="☁️ UPLOAD PHOTOS";b.onclick=()=>uploadInlinePhotos(a.id,input,status,b,listBox);listBox.appendChild(b)}};d.querySelector(".viewAssignment").onclick=()=>openAssignment(a.id);d.querySelector(".completeBtn").onclick=()=>markCompleted(a.id);c.appendChild(d)})}
+function renderAssignments(){const c=$("studentAssignments");let list=assignments.slice().sort((a,b)=>(b.created||0)-(a.created||0));if(filter==="pending")list=list.filter(a=>!completed.includes(a.id));if(filter==="completed")list=list.filter(a=>completed.includes(a.id));if(!list.length){c.innerHTML='<div class="empty">'+(filter==="all"?"No assignments yet.":"Nothing in this section.")+'</div>';return}c.innerHTML="";list.forEach(a=>{const done=completed.includes(a.id),d=document.createElement("div");d.className="assignment "+(done?"completed":"");d.innerHTML='<div class="assignmentTop"><div class="assignmentName">'+esc(a.title)+'</div><div class="badge '+(done?"completedBadge":"")+'">'+(done?"DONE":"NEW")+'</div></div><div class="assignmentMeta">'+esc(a.subject)+(a.topic?" • "+esc(a.topic):"")+" • "+esc(a.marks)+" marks<br>Deadline: "+esc(a.deadline)+(a.description?"<br>"+esc(a.description):"")+ '</div><div class="submissionBox"><div class="submissionTitle">📸 ATTACH COMPLETED WORK</div><div class="submissionHint">Choose up to 5 clear photos (JPG, PNG or WEBP, 10 MB each).</div><input class="inlineAssignmentFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden><button class="uploadBtn inlineChoose">📷 CHOOSE PHOTOS</button><div class="submissionStatus inlineStatus">No photos selected.</div><div class="submissionList inlineList"></div></div><button class="secondaryBtn viewAssignment">VIEW DETAILS</button><button class="completeBtn '+(done?"done":"")+'">'+(done?"✓ COMPLETED":"✓ MARK AS COMPLETED")+'</button>';const input=d.querySelector(".inlineAssignmentFiles"),choose=d.querySelector(".inlineChoose"),status=d.querySelector(".inlineStatus"),listBox=d.querySelector(".inlineList");choose.onclick=()=>input.click();input.onchange=()=>{const files=Array.from(input.files||[]);if(files.length>5||files.some(f=>f.size>10*1024*1024)){input.value="";status.textContent="Maximum 5 photos, 10 MB each.";return}status.textContent=files.length?`${files.length} photo${files.length===1?"":"s"} selected.`:"No photos selected.";listBox.innerHTML="";if(files.length){const b=document.createElement("button");b.className="uploadBtn";b.textContent="☁️ UPLOAD PHOTOS";b.onclick=()=>uploadInlinePhotos(a.id,input,status,b,listBox);listBox.appendChild(b)}};d.querySelector(".viewAssignment").onclick=()=>openAssignment(a.id);d.querySelector(".completeBtn").onclick=()=>markCompleted(a.id);c.appendChild(d)})}
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x===b));renderAssignments()});
-async function uploadAssignmentMedia(file){
- const MAX=50*1024*1024;
- if(file.size>MAX)throw new Error(file.name+" is larger than 50 MB.");
- const fd=new FormData();
- fd.append("file",file);
- fd.append("upload_preset","samisha_upload");
- const res=await fetch("https://api.cloudinary.com/v1_1/xgeh9iul/auto/upload",{method:"POST",body:fd});
- const out=await res.json();
- if(!res.ok||!out.secure_url)throw new Error(out.error?.message||"Assignment file upload failed.");
- return {name:file.name,type:file.type||"application/octet-stream",url:out.secure_url,public_id:out.public_id||""};
-}
-function assignmentMediaHtml(a){
- const media=Array.isArray(a?.media)?a.media:[];
- if(!media.length)return "";
- return '<div class="submissionBox"><div class="submissionTitle">📎 ASSIGNMENT FILES</div><div class="submissionHint">Files provided by your teacher.</div><div class="submissionList">'+media.map(m=>'<div class="submissionItem"><a class="secondaryBtn" href="'+esc(m.url||"")+'" target="_blank" rel="noopener">📎 '+esc(m.name||"Open file")+'</a></div>').join("")+'</div></div>';
-}
-
 async function openAssignment(id){
  const a=assignments.find(x=>x.id===id);
  if(!a)return;
  const done=completed.includes(id);
  $("modalTitle").textContent=a.title;
- $("modalContent").innerHTML=`<div class="assignmentMeta" style="font-size:11px">${esc(a.subject)}${a.topic?" • "+esc(a.topic):""} • ${esc(a.marks)} marks<br>Deadline: ${esc(a.deadline)}</div><div style="margin-top:14px;line-height:1.65;font-size:12px;color:#d9deea">${esc(a.description||"Complete the assignment carefully.")}</div>${assignmentMediaHtml(a)}
+ $("modalContent").innerHTML=`<div class="assignmentMeta" style="font-size:11px">${esc(a.subject)}${a.topic?" • "+esc(a.topic):""} • ${esc(a.marks)} marks<br>Deadline: ${esc(a.deadline)}</div><div style="margin-top:14px;line-height:1.65;font-size:12px;color:#d9deea">${esc(a.description||"Complete the assignment carefully.")}</div>${Array.isArray(a.attachments)&&a.attachments.length?'<div class="submissionBox"><div class="submissionTitle">📎 ASSIGNMENT FILES</div>'+a.attachments.map((f,i)=>'<a class="teacherSubmissionLink" href="'+esc(f.url)+'" target="_blank" rel="noopener">📎 '+esc(f.fileName||("Attachment "+(i+1)))+'</a>').join("")+'</div>':""}
  <div class="submissionBox"><div class="submissionTitle">📸 SUBMIT YOUR ASSIGNMENT</div><div class="submissionHint">Upload clear photos of your completed work. JPG, PNG or WEBP • up to 5 photos, 10 MB each.</div>
  <input id="assignmentFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
  <label class="uploadBtn" for="assignmentFiles">📷 CHOOSE PHOTOS</label><div class="submissionStatus" id="submissionStatus">No photos selected.</div><div class="submissionList" id="submissionList"></div></div>
@@ -274,46 +253,56 @@ async function loadTeacherSubmissions(){
    });
  }catch(e){console.warn("Could not load teacher submissions",e);c.innerHTML='<div class="empty">Unable to load submissions. Check Firebase Storage/Firestore rules.</div>'}
 }
-function clearForm(){["title","topicInput","marks","deadline","description"].forEach(id=>$(id).value="");if($("teacherAttachmentFiles"))$("teacherAttachmentFiles").value="";if($("teacherAttachmentStatus"))$("teacherAttachmentStatus").textContent="No files selected.";editingId=null;$("formHeading").textContent="Create Assignment";$("publishButton").textContent="🚀 PUBLISH ASSIGNMENT";$("cancelEdit").classList.add("hidden")}
-function startEdit(a){editingId=a.id;if($("teacherAttachmentFiles"))$("teacherAttachmentFiles").value="";if($("teacherAttachmentStatus"))$("teacherAttachmentStatus").textContent=Array.isArray(a.media)&&a.media.length?a.media.length+" file(s) already attached. Choose more to add.":"No attachments saved.";$("title").value=a.title;$("subject").value=a.subject||"Mathematics";$("topicInput").value=a.topic||"";$("marks").value=a.marks==="Not specified"?"":a.marks;$("deadline").value=a.deadline==="No deadline"?"":a.deadline;$("description").value=a.description||"";$("formHeading").textContent="Edit Assignment";$("publishButton").textContent="💾 SAVE CHANGES";$("cancelEdit").classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}
+function clearForm(){["title","topicInput","marks","deadline","description"].forEach(id=>$(id).value="");if($("assignmentAttachmentFiles"))$("assignmentAttachmentFiles").value="";if($("assignmentAttachmentStatus"))$("assignmentAttachmentStatus").textContent="No files selected.";editingId=null;$("formHeading").textContent="Create Assignment";$("publishButton").textContent="🚀 PUBLISH ASSIGNMENT";$("cancelEdit").classList.add("hidden")}
+function startEdit(a){editingId=a.id;$("title").value=a.title;$("subject").value=a.subject||"Mathematics";$("topicInput").value=a.topic||"";$("marks").value=a.marks==="Not specified"?"":a.marks;$("deadline").value=a.deadline==="No deadline"?"":a.deadline;$("description").value=a.description||"";$("formHeading").textContent="Edit Assignment";$("publishButton").textContent="💾 SAVE CHANGES";$("cancelEdit").classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}
+async function uploadTeacherAttachment(file){
+ const MAX=50*1024*1024;
+ if(file.size>MAX)throw new Error(file.name+" is larger than 50 MB.");
+ const fd=new FormData();fd.append("file",file);fd.append("upload_preset","samisha_upload");
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),90000);
+ try{
+  const res=await fetch("https://api.cloudinary.com/v1_1/xgeh9iul/auto/upload",{method:"POST",body:fd,signal:controller.signal});
+  const out=await res.json().catch(()=>({}));
+  if(!res.ok||!out.secure_url)throw new Error(out.error?.message||"Attachment upload failed.");
+  return {fileName:file.name,url:out.secure_url,contentType:file.type||"application/octet-stream",size:file.size,publicId:out.public_id||"",created:Date.now()};
+ }catch(e){if(e.name==="AbortError")throw new Error("Attachment upload timed out. Check your internet connection and try again.");throw e}
+ finally{clearTimeout(timer)}
+}
+
 async function saveAssignment(){
  const title=$("title").value.trim();
  if(!title){toast("Please enter an assignment title.");return}
- const files=Array.from($("teacherAttachmentFiles")?.files||[]);
- if(files.length>10){toast("Maximum 10 assignment files.");return}
- $("publishButton").disabled=true;
+ const files=Array.from($("assignmentAttachmentFiles")?.files||[]);
+ if(files.length>10){toast("Maximum 10 attachment files.");return}
+ if(files.some(f=>f.size>50*1024*1024)){toast("Each attachment must be 50 MB or smaller.");return}
+ const old=editingId?(assignments.find(a=>a.id===editingId)||{}):{};
+ const data={title,subject:$("subject").value,topic:$("topicInput").value.trim(),marks:$("marks").value||"Not specified",deadline:$("deadline").value||"No deadline",description:$("description").value.trim()||"Complete the assignment carefully.",created:editingId?(old.created||Date.now()):Date.now()};
+ const btn=$("publishButton"),saveText=editingId?"💾 SAVE CHANGES":"🚀 PUBLISH ASSIGNMENT";
+ if(btn){btn.disabled=true;btn.textContent="⏳ SAVING..."}
  try{
-   const existing=editingId?assignments.find(a=>a.id===editingId):null;
-   let media=Array.isArray(existing?.media)?existing.media:[];
-   if(files.length){
-     $("teacherAttachmentStatus").textContent="Uploading "+files.length+" file(s)…";
-     const uploaded=await Promise.all(files.map(uploadAssignmentMedia));
-     media=media.concat(uploaded);
+  let id=editingId;
+  if(editingId){await updateDoc(doc(db,"assignments",id),data)}else{id=(await addDoc(collection(db,"assignments"),data)).id}
+  let attachments=Array.isArray(old.attachments)?old.attachments.slice():[];
+  if(files.length){
+   $("assignmentAttachmentStatus").textContent=`Uploading ${files.length} file${files.length===1?"":"s"}…`;
+   const uploaded=[];
+   for(let i=0;i<files.length;i++){
+    $("assignmentAttachmentStatus").textContent=`Uploading ${i+1} of ${files.length}: ${files[i].name}`;
+    uploaded.push(await uploadTeacherAttachment(files[i]));
    }
-   const data={
-     title,subject:$("subject").value,topic:$("topicInput").value.trim(),
-     marks:$("marks").value||"Not specified",deadline:$("deadline").value||"No deadline",
-     description:$("description").value.trim()||"Complete the assignment carefully.",
-     media,created:existing?.created||Date.now()
-   };
-   if(editingId){
-     await updateDoc(doc(db,"assignments",editingId),data);
-     const i=assignments.findIndex(a=>a.id===editingId);
-     if(i>=0)assignments[i]={...assignments[i],...data};
-     toast("Assignment updated successfully.")
-   }else{
-     const ref=await addDoc(collection(db,"assignments"),data);
-     assignments.push({id:ref.id,...data});
-     toast("Assignment published successfully! 🚀")
-   }
-   clearForm();renderHome();renderTeacher();
- }catch(e){
-   console.error(e);
-   if($("teacherAttachmentStatus"))$("teacherAttachmentStatus").textContent=e.message||"Upload failed.";
-   toast("Could not save assignment: "+(e.message||"Upload failed."));
- }finally{$("publishButton").disabled=false}
+   attachments=uploaded;
+   $("assignmentAttachmentStatus").textContent="✓ Files uploaded. Saving assignment…";
+   await updateDoc(doc(db,"assignments",id),{attachments});
+  }
+  const finalData={...data,attachments};
+  if(editingId){const i=assignments.findIndex(a=>a.id===id);if(i>=0)assignments[i]={...assignments[i],...finalData};toast("Assignment updated successfully.")}
+  else{assignments.push({id,...finalData});toast("Assignment published successfully! 🚀")}
+  clearForm();renderHome();renderTeacher();
+ }catch(e){console.error(e);$("assignmentAttachmentStatus").textContent=e.message||"Upload failed.";toast("Could not save/upload: "+(e.message||"Please try again."))}
+ finally{if(btn){btn.disabled=false;btn.textContent=saveText}}
 }
 $("publishButton").onclick=saveAssignment;$("cancelEdit").onclick=clearForm;
+$("assignmentAttachmentFiles").onchange=()=>{const fs=Array.from($("assignmentAttachmentFiles").files||[]);$("assignmentAttachmentStatus").textContent=fs.length?`${fs.length} file${fs.length===1?"":"s"} selected.`:"No files selected.";};
 async function deleteAssignment(id){if(!confirm("Delete this assignment?"))return;try{await deleteDoc(doc(db,"assignments",id));assignments=assignments.filter(a=>a.id!==id);completed=completed.filter(x=>x!==id);localStorage.setItem("samisha_completed",JSON.stringify(completed));await setDoc(doc(db,"progress","vidushi"),{completedAssignments:completed,updated:Date.now()},{merge:true});renderHome();renderProgress();renderTeacher();toast("Assignment deleted.")}catch(e){console.error(e);toast("Could not delete assignment.")}}
 async function saveSettings(){dailyGoal=Math.max(1,Math.min(20,Number($("goalInput").value)||1));goalDescription=$("goalDescription").value.trim()||"Complete your daily learning goal";localStorage.setItem("samisha_goal",dailyGoal);localStorage.setItem("samisha_goal_desc",goalDescription);try{await setDoc(doc(db,"settings","app"),{dailyGoal,goalDescription,updated:Date.now()},{merge:true});toast("Daily goal saved 🎯")}catch(e){toast("Saved locally. Firebase settings need permission.")};renderHome()}
 async function saveMessage(){teacherMessage=$("messageInput").value.trim()||"Keep challenging yourself, Vidushi. Keep going!";localStorage.setItem("samisha_message",teacherMessage);try{await setDoc(doc(db,"settings","app"),{teacherMessage,updated:Date.now()},{merge:true});toast("Teacher message saved 💬")}catch(e){toast("Saved locally. Firebase settings need permission.")};renderHome()}
