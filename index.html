@@ -97,9 +97,10 @@ button,input,textarea,select{font-family:inherit}button{cursor:pointer;color:inh
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import{getFirestore,collection,addDoc,getDocs,deleteDoc,doc,query,orderBy,getDoc,setDoc,updateDoc,where}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import{getStorage,ref,uploadBytes,getDownloadURL}from"https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
 
 const firebaseConfig={apiKey:"AIzaSyB-SvF0ZqRT_tSjDDbHvC1fZxjS9QX1jXU",authDomain:"samisha-vidushi-2026.firebaseapp.com",projectId:"samisha-vidushi-2026",storageBucket:"samisha-vidushi-2026.firebasestorage.app",messagingSenderId:"409210488471",appId:"1:409210488471:web:8ca133891e61c70c0a0bd2",measurementId:"G-YHKK9YQ6GE"};
-const app=initializeApp(firebaseConfig),db=getFirestore(app);
+const app=initializeApp(firebaseConfig),db=getFirestore(app),storage=getStorage(app);
 const $=id=>document.getElementById(id),esc=t=>String(t??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 let assignments=[],filter="all",editingId=null;
 let completed=JSON.parse(localStorage.getItem("samisha_completed")||"[]");
@@ -278,7 +279,7 @@ async function saveAssignment(){
   if(files.length){$("assignmentAttachmentStatus").textContent=`Saving ${files.length} attachment${files.length===1?"":"s"}…`;for(const file of files){const prepared=await prepareTeacherAttachment(file);await addDoc(collection(db,"assignments",id,"attachments"),{fileName:file.name,dataUrl:prepared.dataUrl,contentType:prepared.contentType,size:prepared.size,created:Date.now()});existingCount++}}
   await updateDoc(doc(db,"assignments",id),{attachmentCount:existingCount});
   const finalData={...data,attachmentCount:existingCount};if(editingId){const i=assignments.findIndex(a=>a.id===id);if(i>=0)assignments[i]={...assignments[i],...finalData};toast("Assignment updated successfully.")}else{assignments.push({id,...finalData});toast("Assignment published successfully 🚀")}
-  clearForm();renderHome();renderProgress();renderTeacher();
+  clearForm();await loadAssignments();renderHome();renderProgress();renderTeacher();
  }catch(e){console.error(e);$("assignmentAttachmentStatus").textContent=e.message||"Could not save assignment.";toast(e.message||"Could not save assignment.")}
  finally{if(btn){btn.disabled=false;btn.textContent=saveText}}
 }
@@ -290,7 +291,29 @@ async function saveMessage(){teacherMessage=$("messageInput").value.trim()||"Kee
 $("saveGoal").onclick=saveSettings;$("saveMessage").onclick=saveMessage;
 async function syncProgress(){try{const s=await getDoc(doc(db,"progress","vidushi"));if(s.exists()){const p=s.data();if(Array.isArray(p.completedAssignments))completed=p.completedAssignments;if(typeof p.xp==="number")xp=p.xp;if(typeof p.streak==="number")streak=p.streak;if(p.lastActive)lastActive=p.lastActive;if(p.todayDate===key()&&typeof p.todayDone==="number")todayDone=p.todayDone;if(typeof p.rpgBossHp==="number")rpgBossHp=p.rpgBossHp;if(typeof p.rpgBosses==="number")rpgBosses=p.rpgBosses;if(typeof p.rpgRewardReady==="boolean")rpgRewardReady=p.rpgRewardReady;if(typeof p.rpgClaimedLevel==="number")rpgClaimedLevel=p.rpgClaimedLevel;if(p.rpgQuestDay)rpgQuestDay=p.rpgQuestDay;if(p.rpgQuestState&&typeof p.rpgQuestState==="object")rpgQuestState=p.rpgQuestState;localStorage.setItem("samisha_completed",JSON.stringify(completed));localStorage.setItem("samisha_xp",xp);localStorage.setItem("samisha_streak",streak);localStorage.setItem("samisha_last_active",lastActive);localStorage.setItem("samisha_today_done",todayDone)}}catch(e){console.warn("Progress sync unavailable",e)}}
 async function loadSettings(){try{const s=await getDoc(doc(db,"settings","app"));if(s.exists()){const d=s.data();if(d.teacherMessage){teacherMessage=d.teacherMessage;localStorage.setItem("samisha_message",teacherMessage)}if(d.dailyGoal){dailyGoal=Math.max(1,Number(d.dailyGoal));localStorage.setItem("samisha_goal",dailyGoal)}if(d.goalDescription){goalDescription=d.goalDescription;localStorage.setItem("samisha_goal_desc",goalDescription)}}}catch(e){console.warn("Settings sync unavailable",e)}}
-async function loadAssignments(){try{let snap;try{snap=await getDocs(query(collection(db,"assignments"),orderBy("created","desc")))}catch(e){snap=await getDocs(collection(db,"assignments"))}assignments=snap.docs.map(x=>({id:x.id,...x.data()}));renderHome();renderProgress();renderTeacher()}catch(e){console.error(e);$("studentAssignments").innerHTML='<div class="empty">Unable to load assignments. Check your Firebase connection.</div>'}}
+async function loadAssignments(){
+  try{
+    let snap;
+    try{snap=await getDocs(query(collection(db,"assignments"),orderBy("created","desc")))}
+    catch(e){snap=await getDocs(collection(db,"assignments"))}
+    const base=snap.docs.map(x=>({id:x.id,...x.data()}));
+    assignments=await Promise.all(base.map(async a=>{
+      try{
+        const attSnap=await getDocs(query(collection(db,"assignments",a.id,"attachments"),orderBy("created","asc")));
+        const subAttachments=attSnap.docs.map(d=>({id:d.id,...d.data(),url:d.data().dataUrl}));
+        const legacy=Array.isArray(a.attachments)?a.attachments:[];
+        return {...a,attachments:[...legacy,...subAttachments],attachmentCount:Number(a.attachmentCount||0)||legacy.length+subAttachments.length};
+      }catch(e){
+        console.warn("Could not load attachments for",a.id,e);
+        return a;
+      }
+    }));
+    renderHome();renderProgress();renderTeacher();
+  }catch(e){
+    console.error(e);
+    $("studentAssignments").innerHTML='<div class="empty">Unable to load assignments. Check your Firebase connection.</div>';
+  }
+}
 function updateStreak(){ensureToday();if(lastActive&&lastActive!==key()&&lastActive!==yesterday()){streak=1;localStorage.setItem("samisha_streak",streak)}}
 $("bossAttack").onclick=()=>{if(rpgBossHp<=0)return;rpgResetDaily();const available=rpgQuestDefs.find(q=>!rpgQuestState[q.id]);if(!available){toast("Complete today's quests first! 🗡️");return}completeRpgQuest(available.id);renderHome();renderProgress()};
 $("claimReward").onclick=()=>{if(!rpgRewardReady)return;const info=rpgLevelInfo();rpgRewardReady=false;rpgClaimedLevel=info.level;localStorage.setItem("samisha_rpg_reward_ready","0");localStorage.setItem("samisha_rpg_claimed_level",rpgClaimedLevel);toast("Reward claimed! 📚 +25 bonus XP");xp+=25;localStorage.setItem("samisha_xp",xp);saveRpgProgress();renderRpg();renderHome();renderProgress()};
